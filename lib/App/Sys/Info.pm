@@ -82,44 +82,50 @@ sub probe {
 
 sub _probe {
     my $self = shift;
-    return(
-    [ 'Sys::Info Version'         => Sys::Info->VERSION                                   ],
-    [ 'Perl Version'              => $self->info->perl_long                               ],
-    [ 'Host Name'                 => $self->os->host_name                                 ],
-    [ 'OS Name'                   => $self->_os_name()                                    ],
-    [ 'OS Version'                => $self->_os_version()                                 ],
-    [ 'OS Manufacturer'           => $self->meta->{'manufacturer'}        || $self->NA    ],
-    [ 'OS Configuration'          => $self->os->product_type              || $self->NA    ],
-    [ 'OS Build Type'             => $self->meta->{'build_type'}          || $self->NA    ],
-    [ 'Running on'                => $self->_bitness()                                    ],
-    [ 'Registered Owner'          => $self->meta->{'owner'}               || $self->NA    ],
-    [ 'Registered Organization'   => $self->meta->{'organization'}        || $self->NA    ],
-    [ 'Product ID'                => $self->meta->{'product_id'}          || $self->NA    ],
-    [ 'Original Install Date'     => $self->_install_date()                               ],
-    [ 'System Up Time'            => elapsed($self->os->tick_count)       || $self->NA    ],
-    [ 'System Manufacturer'       => $self->meta->{'system_manufacturer'} || $self->NA    ],
-    [ 'System Model'              => $self->meta->{'system_model'}        || $self->NA    ],
-    [ 'System Type'               => $self->meta->{'system_type'}         || $self->NA    ],
-    [ 'Processor(s)'              => $self->_processors()                 || $self->NA    ],
-    [ 'BIOS Version'              => $self->_bios_version()                               ],
-    [ 'Windows Directory'         => $self->meta->{windows_dir}           || $self->NA    ],
-    [ 'System Directory'          => $self->meta->{system_dir}            || $self->NA    ],
-    [ 'Boot Device'               => $self->meta->{'boot_device'}         || $self->NA    ],
-    [ 'System Locale'             => $self->{LOCALE}                      || $self->NA    ],
-    [ 'Input Locale'              => $self->{LOCALE}                      || $self->NA    ],
-    [ 'Time Zone'                 => $self->os->tz                        || $self->NA    ],
-    [ 'Total Physical Memory'     => $self->_mb($self->meta->{physical_memory_total}    ) ],
-    [ 'Available Physical Memory' => $self->_mb($self->meta->{physical_memory_available}) ],
-    [ 'Virtual Memory: Max Size'  => $self->_mb($self->meta->{page_file_total}          ) ],
-    [ 'Virtual Memory: Available' => $self->_mb($self->meta->{page_file_available}      ) ],
-    [ 'Virtual Memory: In Use'    => $self->_vm()                                         ],
-    [ 'Page File Location(s)'     => $self->meta->{page_file_path}        || $self->NA    ],
-    [ 'Domain'                    => $self->os->domain_name               || $self->NA    ],
-    [ 'Logon Server'              => $self->os->logon_server              || $self->NA    ],
-
-    [ 'Windows CD Key'            => $self->os->cdkey                     || $self->NA    ],
-    [ 'Microsoft Office CD Key'   => $self->_office_cdkey()                               ],
+    my $meta = $self->meta;
+    my $NA   = $self->NA;
+    my $i    = $self->info;
+    my $os   = $self->os;
+    my @rv   = (
+    [ 'Sys::Info Version'         => Sys::Info->VERSION                       ],
+    [ 'Perl Version'              => $i->perl_long                            ],
+    [ 'Host Name'                 => $os->host_name                           ],
+    [ 'OS Name'                   => $self->_os_name()                        ],
+    [ 'OS Version'                => $self->_os_version()                     ],
+    [ 'OS Manufacturer'           => $meta->{manufacturer}          || $NA    ],
+    [ 'OS Configuration'          => $os->product_type              || $NA    ],
+    [ 'OS Build Type'             => $meta->{build_type}            || $NA    ],
+    [ 'Running on'                => $self->_bitness()                        ],
+    [ 'Registered Owner'          => $meta->{owner}                 || $NA    ],
+    [ 'Registered Organization'   => $meta->{organization}          || $NA    ],
+    [ 'Product ID'                => $meta->{product_id}            || $NA    ],
+    [ 'Original Install Date'     => $self->_install_date()                   ],
+    [ 'System Up Time'            => elapsed($os->tick_count)       || $NA    ],
+    [ 'System Manufacturer'       => $meta->{system_manufacturer}   || $NA    ],
+    [ 'System Model'              => $meta->{system_model}          || $NA    ],
+    [ 'System Type'               => $meta->{system_type}           || $NA    ],
+    [ 'Processor(s)'              => $self->_processors()           || $NA    ],
+    [ 'BIOS Version'              => $self->_bios_version()                   ],
+    [ 'Windows Directory'         => $meta->{windows_dir}           || $NA    ],
+    [ 'System Directory'          => $meta->{system_dir}            || $NA    ],
+    [ 'Boot Device'               => $meta->{boot_device}           || $NA    ],
+    [ 'System Locale'             => $self->{LOCALE}                || $NA    ],
+    [ 'Input Locale'              => $self->{LOCALE}                || $NA    ],
+    [ 'Time Zone'                 => $os->tz                        || $NA    ],
+    [ 'Total Physical Memory'     => $self->_mb($meta->{physical_memory_total}    ) ],
+    [ 'Available Physical Memory' => $self->_mb($meta->{physical_memory_available}) ],
+    [ 'Virtual Memory: Max Size'  => $self->_mb($meta->{page_file_total}          ) ],
+    [ 'Virtual Memory: Available' => $self->_mb($meta->{page_file_available}      ) ],
+    [ 'Virtual Memory: In Use'    => $self->_vm()                             ],
+    [ 'Page File Location(s)'     => $meta->{page_file_path}        || $NA    ],
+    [ 'Domain'                    => $os->domain_name               || $NA    ],
+    [ 'Logon Server'              => $os->logon_server              || $NA    ],
     );
+    push @rv,
+    [ 'Windows CD Key'            => $os->cdkey                     || $NA    ],
+    [ 'Microsoft Office CD Key'   => $self->_office_cdkey()                   ],
+    if $os->is_windows;
+    return @rv;
 }
 
 sub _processors {
