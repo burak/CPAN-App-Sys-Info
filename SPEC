@@ -1,0 +1,15 @@
+{
+    module_name    => 'App::Sys::Info',
+    requires       => {
+        'Sys::Info'      => '0.73',
+        'Number::Format' => 0,
+        'Text::Table'    => 0,
+        'Time::Elapsed'  => 0,
+        ( $] < 5.006 ? ( 'warnings::compat' => 0 ) : ()),
+    },
+    meta_merge     => {
+        resources => {
+            repository => 'http://bitbucket.org/burak/cpan-app-sys-info/',
+        },
+    },
+}

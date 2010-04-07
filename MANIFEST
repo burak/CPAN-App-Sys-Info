@@ -1,0 +1,8 @@
+lib/App/Sys/Info.pm
+bin/sysinfo.pl
+t/01-use.t
+Build.PL
+Changes
+MANIFEST
+README
+SPEC
