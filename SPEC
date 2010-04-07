@@ -7,6 +7,9 @@
         'Time::Elapsed'  => 0,
         ( $] < 5.006 ? ( 'warnings::compat' => 0 ) : ()),
     },
+    script_files => [qw(
+        bin/sysinfo
+    )],
     meta_merge     => {
         resources => {
             repository => 'http://bitbucket.org/burak/cpan-app-sys-info/',
