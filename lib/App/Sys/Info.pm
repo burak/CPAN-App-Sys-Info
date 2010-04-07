@@ -205,4 +205,24 @@ Run C<sysinfo> from the command line.
 
 The output is identical to I<systeminfo> windows command.
 
+=head1 METHODS
+
+=head2 NA
+
+=head2 cpu
+
+=head2 info
+
+=head2 meta
+
+=head2 new
+
+=head2 nf
+
+=head2 os
+
+=head2 probe
+
+=head2 run
+
 =cut
