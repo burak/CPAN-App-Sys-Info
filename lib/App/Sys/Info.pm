@@ -3,7 +3,7 @@ use strict;
 use warnings;
 use vars qw( $VERSION );
 
-$VERSION = '0.10';
+$VERSION = '0.11';
 
 use constant CP_UTF8      => 65_001;
 use constant KB           =>   1024;
@@ -17,7 +17,7 @@ use Time::Elapsed        qw( elapsed );
 use Sys::Info            qw();
 use Sys::Info::Constants qw(NEW_PERL);
 
-my $NEED_CHCP;
+my($NEED_CHCP, $OLDCP);
 
 BEGIN {
     no strict qw( refs );
@@ -26,16 +26,14 @@ BEGIN {
     }
 }
 
-my $oldcp;
-
 END {
-   system chcp => $oldcp, '2>nul', '1>nul' if $NEED_CHCP && $oldcp;
+   system chcp => $OLDCP, '2>nul', '1>nul' if $NEED_CHCP && $OLDCP;
 }
 
 sub new {
-    my($class) = @_;
-    my $i    = Sys::Info->new;
-    my $self = {
+    my $class  = shift;
+    my $i      = Sys::Info->new;
+    my $self   = {
         LOCALE => setlocale( LC_CTYPE ),
         NA     => 'N/A',
         info   => $i,
@@ -58,8 +56,8 @@ sub run {
 
     if ( $NEED_CHCP ) {
         ## no critic (InputOutput::ProhibitBacktickOperators)
-        chomp($oldcp = (split /:\s?/xms, qx(chcp))[LAST_ELEMENT]);
-        system chcp => CP_UTF8, '2>nul', '1>nul' if $oldcp; # try to change it to unicode
+        chomp($OLDCP = (split /:\s?/xms, qx(chcp))[LAST_ELEMENT]);
+        system chcp => CP_UTF8, '2>nul', '1>nul' if $OLDCP; # try to change it to unicode
         if ( NEW_PERL ) {
             my $eok = eval q{ binmode STDOUT, ':utf8'; 1; };
         }
@@ -86,7 +84,8 @@ sub _probe {
     my $NA   = $self->NA;
     my $i    = $self->info;
     my $os   = $self->os;
-    my @rv   = (
+    my @rv;
+    push @rv,
     [ 'Sys::Info Version'         => Sys::Info->VERSION                       ],
     [ 'Perl Version'              => $i->perl_long                            ],
     [ 'Host Name'                 => $os->host_name                           ],
@@ -96,17 +95,30 @@ sub _probe {
     [ 'OS Configuration'          => $os->product_type              || $NA    ],
     [ 'OS Build Type'             => $meta->{build_type}            || $NA    ],
     [ 'Running on'                => $self->_bitness()                        ],
+    ;
+    push @rv,
     [ 'Registered Owner'          => $meta->{owner}                 || $NA    ],
     [ 'Registered Organization'   => $meta->{organization}          || $NA    ],
+    if $os->is_windows;
+    push @rv,
     [ 'Product ID'                => $meta->{product_id}            || $NA    ],
     [ 'Original Install Date'     => $self->_install_date()                   ],
     [ 'System Up Time'            => elapsed($os->tick_count)       || $NA    ],
+    ;
+    push @rv,
     [ 'System Manufacturer'       => $meta->{system_manufacturer}   || $NA    ],
     [ 'System Model'              => $meta->{system_model}          || $NA    ],
+    if $os->is_windows;
+    push @rv,
     [ 'System Type'               => $meta->{system_type}           || $NA    ],
     [ 'Processor(s)'              => $self->_processors()           || $NA    ],
     [ 'BIOS Version'              => $self->_bios_version()                   ],
+    ;
+    push @rv,
     [ 'Windows Directory'         => $meta->{windows_dir}           || $NA    ],
+    if $os->is_windows;
+    ;
+    push @rv,
     [ 'System Directory'          => $meta->{system_dir}            || $NA    ],
     [ 'Boot Device'               => $meta->{boot_device}           || $NA    ],
     [ 'System Locale'             => $self->{LOCALE}                || $NA    ],
@@ -120,7 +132,7 @@ sub _probe {
     [ 'Page File Location(s)'     => $meta->{page_file_path}        || $NA    ],
     [ 'Domain'                    => $os->domain_name               || $NA    ],
     [ 'Logon Server'              => $os->logon_server              || $NA    ],
-    );
+    ;
     push @rv,
     [ 'Windows CD Key'            => $os->cdkey                     || $NA    ],
     [ 'Microsoft Office CD Key'   => $self->_office_cdkey()                   ],
@@ -184,7 +196,7 @@ sub _bios_version {
     my $bv = eval {
                 $self->info->device('bios')->version;
              };
-    return $bv;
+    return $bv || $self->NA;
 }
 
 1;
