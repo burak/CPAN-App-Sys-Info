@@ -2,6 +2,10 @@ Revision history for Perl extension App::Sys::Info.
 
 Time zone is GMT+2.
 
+0.12 Sun Apr 11 05:03:19 2010
+    => Tidy up internals.
+    => Added more information sections.
+
 0.11 Thu Apr  8 03:04:47 2010
     => Add conditionals for some windows specific features.
 
