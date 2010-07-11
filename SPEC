@@ -8,7 +8,7 @@
         ( $] < 5.006 ? ( 'warnings::compat' => 0 ) : ()),
     },
     script_files => [qw(
-        bin/sysinfo
+        bin/psysinfo
     )],
     meta_merge     => {
         resources => {
