@@ -3,31 +3,36 @@ use strict;
 use warnings;
 use vars qw( $VERSION );
 
-$VERSION = '0.13';
+$VERSION = '0.20';
 
 use constant CP_UTF8      => 65_001;
-use constant KB           =>   1024;
 use constant LAST_ELEMENT =>     -1;
 
-use Carp                 qw( croak );
-use Number::Format       qw();
-use POSIX                qw(locale_h);
+use Carp                 qw( croak    );
+use Format::Human::Bytes;
+use POSIX                qw( locale_h );
 use Text::Table          qw();
-use Time::Elapsed        qw( elapsed );
+use Time::Elapsed        qw( elapsed  );
 use Sys::Info            qw();
-use Sys::Info::Constants qw(NEW_PERL);
+use Sys::Info::Constants qw( NEW_PERL );
 
 my($NEED_CHCP, $OLDCP);
 
 BEGIN {
     no strict qw( refs );
-    foreach my $id ( qw( info os  cpu nf meta NA ) ) {
+    foreach my $id ( qw( info os cpu fhb meta NA ) ) {
         *{ $id } = sub () { return shift->{$id} };
     }
 }
 
 END {
-   system chcp => $OLDCP, '2>nul', '1>nul' if $NEED_CHCP && $OLDCP;
+    _chcp( $OLDCP ) if $NEED_CHCP && $OLDCP;
+}
+
+sub _chcp {
+    my $enc = shift || croak 'No encoding specified';
+    system chcp => $enc, '2>nul', '1>nul';
+    return;
 }
 
 sub new {
@@ -39,10 +44,7 @@ sub new {
         info   => $i,
         os     => $i->os,
         cpu    => $i->device('CPU'),
-        nf     => Number::Format->new(
-                    THOUSANDS_SEP => q{,},
-                    DECIMAL_POINT => q{.},
-                ),
+        fhb    => Format::Human::Bytes->new,
     };
     $self->{meta} = { $self->{os}->meta };
     bless $self, $class;
@@ -52,21 +54,13 @@ sub new {
 sub run {
     my $self   = __PACKAGE__->new;
     $NEED_CHCP = $self->os->is_winnt && $ENV{PROMPT};
-    my @probe  = $self->probe();
+    my @probe  = $self->probe;
 
-    if ( $NEED_CHCP ) {
-        ## no critic (InputOutput::ProhibitBacktickOperators)
-        chomp($OLDCP = (split /:\s?/xms, qx(chcp))[LAST_ELEMENT]);
-        system chcp => CP_UTF8, '2>nul', '1>nul' if $OLDCP; # try to change it to unicode
-        if ( NEW_PERL ) {
-            my $eok = eval q{ binmode STDOUT, ':utf8'; 1; };
-        }
-    }
-    my @titles = ( "FIELD\n=====", "VALUE\n=====");
-    @titles = ( q{}, q{});
+    $self->_init_encoding;
 
-    my $tb = Text::Table->new( @titles );
+    my $tb = Text::Table->new( q{}, q{} );
     $tb->load( @probe );
+
     print "\n", $tb or croak "Unable to orint to STDOUT: $!";
     return;
 }
@@ -76,6 +70,20 @@ sub probe {
     my @rv   = eval { $self->_probe(); };
     croak "Error fetching information: $@" if $@;
     return @rv;
+}
+
+sub _init_encoding {
+    my $self = shift;
+    if ( $NEED_CHCP ) {
+        ## no critic (InputOutput::ProhibitBacktickOperators)
+        chomp($OLDCP = (split /:\s?/xms, qx(chcp))[LAST_ELEMENT]);
+        # try to change the command line encoding to unicode
+        _chcp( CP_UTF8 ) if $OLDCP;
+        if ( NEW_PERL ) {
+            my $eok = eval q{ binmode STDOUT, ':utf8'; 1; };
+        }
+    }
+    return;
 }
 
 sub _probe {
@@ -90,72 +98,108 @@ sub _probe {
     my @rv;
 
     push @rv,
-    [ 'Sys::Info Version' => Sys::Info->VERSION   ],
-    [ 'Perl Version'      => $i->perl_long        ],
-    [ 'Host Name'         => $os->host_name       ],
-    [ 'OS Name'           => $self->_os_name()    ],
-    [ 'OS Version'        => $self->_os_version() ],
+    [ 'Sys::Info Version' => Sys::Info->VERSION ],
+    [ 'Perl Version'      => $i->perl_long      ],
+    [ 'Host Name'         => $os->host_name     ],
+    [ 'OS Name'           => $self->_os_name    ],
+    [ 'OS Version'        => $self->_os_version ],
     ;
 
-    push @rv, [ 'OS Manufacturer'  => $meta->{manufacturer} ] if $meta->{manufacturer};
-    push @rv, [ 'OS Configuration' => $pt                   ] if $pt;
-    push @rv, [ 'OS Build Type'    => $meta->{build_type}   ] if $meta->{build_type};
+    my $manu = $meta->{manufacturer};
+    my $bt   = $meta->{build_type};
+
+    push @rv, [ 'OS Manufacturer'  => $manu ] if $manu;
+    push @rv, [ 'OS Configuration' => $pt   ] if $pt;
+    push @rv, [ 'OS Build Type'    => $bt   ] if $bt;
 
     $self->_bitness(      \@rv );
     $self->_current_user( \@rv );
+    $self->_registered(   \@rv, $meta );
 
-    if ( $os->is_windows ) {
-        push @rv, [ 'Registered Owner'        => $meta->{owner}        ] if $meta->{owner};
-        push @rv, [ 'Registered Organization' => $meta->{organization} ] if $meta->{organization};
-    }
+    my $pid  = $meta->{product_id};
+    my $tick = $os->tick_count;
+    my $st   = $meta->{system_type};
 
-    push @rv, [ 'Product ID'     => $meta->{product_id}      ] if $meta->{product_id};
+    push @rv, [ 'Product ID'     => $pid           ] if $pid;
+
     $self->_install_date( \@rv );
-    push @rv, [ 'System Up Time' => elapsed($os->tick_count) ] if $os->tick_count;
 
-    if ( $os->is_windows ) {
-        push @rv, [ 'System Manufacturer' => $meta->{system_manufacturer} ] if $meta->{system_manufacturer};
-        push @rv, [ 'System Model'        => $meta->{system_model}        ] if $meta->{system_model};
-    }
+    push @rv, [ 'System Up Time' => elapsed($tick) ] if $tick;
 
-    push @rv, [ 'System Type'  => $meta->{system_type} ] if $meta->{system_type};
-    push @rv, [ 'Processor(s)' => $proc                ] if $proc;
+    $self->_manufacturer( \@rv, $meta );
+
+    push @rv, [ 'System Type'    => $st            ] if $st;
+    push @rv, [ 'Processor(s)'   => $proc          ] if $proc;
 
     $self->_proc_meta(    \@rv );
     $self->_bios_version( \@rv );
+    $self->_directories(  \@rv, $meta );
 
-    push @rv, [ 'Windows Directory' => $meta->{windows_dir} ] if $meta->{windows_dir};
-    push @rv, [ 'System Directory'  => $meta->{system_dir}  ] if $meta->{system_dir};
-    push @rv, [ 'Boot Device'       => $meta->{boot_device} ] if $meta->{boot_device};
-    push @rv, [ 'System Locale'     => $self->{LOCALE}      ] if $self->{LOCALE};
-    push @rv, [ 'Input Locale'      => $self->{LOCALE}      ] if $self->{LOCALE};
-    push @rv, [ 'Time Zone'         => $tz                  ] if $tz;
-    push @rv,
-    [ 'Total Physical Memory'     => $self->_mb($meta->{physical_memory_total}    ) ],
-    [ 'Available Physical Memory' => $self->_mb($meta->{physical_memory_available}) ],
-    [ 'Virtual Memory: Max Size'  => $self->_mb($meta->{page_file_total}          ) ],
-    [ 'Virtual Memory: Available' => $self->_mb($meta->{page_file_available}      ) ],
-    ;
+    my $loc = $self->{LOCALE};
 
-    $self->_vm( \@rv );
+    push @rv, [ 'System Locale' => $loc ] if $loc;
+    push @rv, [ 'Input Locale'  => $loc ] if $loc;
+    push @rv, [ 'Time Zone'     => $tz  ] if $tz;
+
+    $self->_memory( \@rv, $meta );
+    $self->_vm(     \@rv );
 
     my $domain = $os->domain_name;
     my $logon  = $os->logon_server;
     my $ip     = $os->ip;
+    my $page   = $meta->{page_file_path};
 
-    push @rv, [ 'Page File Location(s)' => $meta->{page_file_path} ] if $meta->{page_file_path};
-    push @rv, [ 'Domain'                => $domain                 ] if $domain;
-    push @rv, [ 'Logon Server'          => $logon                  ] if $logon;
-    push @rv, [ 'IP Address'            => $os->ip                 ] if $ip;
+    push @rv, [ 'Page File Location(s)' => $page    ] if $page;
+    push @rv, [ 'Domain'                => $domain  ] if $domain;
+    push @rv, [ 'Logon Server'          => $logon   ] if $logon;
+    push @rv, [ 'IP Address'            => $ip      ] if $ip;
 
-    if ( $os->is_windows ) {
-        my $cdkey = $os->cdkey;
-        my $okey  = $self->_office_cdkey;
-        push @rv, [ 'Windows CD Key'          => $cdkey ] if $cdkey;
-        push @rv, [ 'Microsoft Office CD Key' => $okey  ] if $okey;
-    }
+    $self->_cdkey( \@rv );
 
     return @rv;
+}
+
+sub _registered {
+    my($self, $rv, $meta) = @_;
+    return if ! $self->os->is_windows;
+    my $owner = $meta->{owner};
+    my $org   = $meta->{organization};
+    push @{ $rv }, [ 'Registered Owner'        => $owner ] if $owner;
+    push @{ $rv }, [ 'Registered Organization' => $org   ] if $org;
+    return;
+}
+
+sub _directories {
+    my($self, $rv, $meta) = @_;
+    my $win  = $meta->{windows_dir};
+    my $sys  = $meta->{system_dir};
+    my $boot = $meta->{boot_device};
+    push @{ $rv }, [ 'Windows Directory' => $win  ] if $win;
+    push @{ $rv }, [ 'System Directory'  => $sys  ] if $sys;
+    push @{ $rv }, [ 'Boot Device'       => $boot ] if $boot;
+    return;
+}
+
+sub _manufacturer {
+    my($self, $rv, $meta) = @_;
+    return if ! $self->os->is_windows;
+    my $manu  = $meta->{system_manufacturer};
+    my $model = $meta->{system_model};
+    push @{ $rv }, [ 'System Manufacturer' => $manu  ] if $manu;
+    push @{ $rv }, [ 'System Model'        => $model ] if $model;
+    return;
+}
+
+sub _cdkey {
+    my($self, $rv) = @_;
+    my $os = $self->os;
+    return if ! $os->is_windows;
+
+    my $cdkey = $os->cdkey;
+    my $okey  = $self->_office_cdkey;
+    push @{ $rv }, [ 'Windows CD Key'          => $cdkey ] if $cdkey;
+    push @{ $rv }, [ 'Microsoft Office CD Key' => $okey  ] if $okey;
+    return;
 }
 
 sub _current_user {
@@ -163,10 +207,13 @@ sub _current_user {
     my $os   = $self->os;
     my $user = $os->login_name || return;
     my $real = $os->login_name( real => 1 );
+
     return if ! $user || ! $real;
+
     my $display = $real && ($real ne $user) ? qq{$real ($user)} : $user;
     $display .= $os->is_root ? q{ is an administrator} : q{};
     push @{ $rv_ref }, [ 'Current User', $display ];
+
     return;
 }
 
@@ -212,19 +259,34 @@ sub _processors {
     return $rv;
 }
 
+sub _memory {
+    my($self, $rv, $meta) = @_;
+    push @{ $rv },
+        map {
+            [ $_->[0], $self->_mb( $_->[1] ) ]
+        }
+        [ 'Total Physical Memory'     => $meta->{physical_memory_total}     ],
+        [ 'Available Physical Memory' => $meta->{physical_memory_available} ],
+        [ 'Virtual Memory: Max Size'  => $meta->{page_file_total}           ],
+        [ 'Virtual Memory: Available' => $meta->{page_file_available}       ],
+    ;
+    return;
+}
+
 sub _vm {
     my($self, $rv_ref) = @_;
     my $tot = $self->meta->{page_file_total}     || return;
     my $av  = $self->meta->{page_file_available} || return;
-    push @{ $rv_ref }, [ 'Virtual Memory: In Use' => $self->_mb( $tot - $av ) ];
+    push @{ $rv_ref },
+        [ 'Virtual Memory: In Use' => $self->_mb( $tot - $av ) ]
+    ;
     return;
 }
 
 sub _mb {
     my $self = shift;
     my $kb   = shift || return $self->NA;
-    my $int  = sprintf '%.0f', $kb / KB;
-    return sprintf '%s MB', $self->nf->format_number( $int );
+    return $self->fhb->base10( $kb );
 }
 
 sub _os_name {
@@ -234,12 +296,14 @@ sub _os_name {
 
 sub _os_version {
     my $self = shift;
-    return $self->os->version . q{.} . $self->os->build;
+    my $os   = $self->os;
+    return $os->version . q{.} . $os->build;
 }
 
 sub _office_cdkey {
-    my $self = shift;
-    return ($self->os->cdkey( office => 1 ))[0] || $self->NA ;
+    my $self   = shift;
+    my @office = $self->os->cdkey( office => 1 );
+    return @office ? $office[0] : undef;
 }
 
 sub _bitness {
@@ -274,7 +338,7 @@ __END__
 
 =head1 NAME
 
-App::Sys::Info - An application of Sys::Info to gather information from the host system
+App::Sys::Info - Application of Sys::Info to gather information from the system
 
 =head1 SYNOPSIS
 
@@ -282,7 +346,7 @@ Run C<psysinfo> from the command line.
 
 =head1 DESCRIPTION
 
-The output is identical to I<systeminfo> windows command.
+The output is similar to I<systeminfo> windows command.
 
 =head1 METHODS
 

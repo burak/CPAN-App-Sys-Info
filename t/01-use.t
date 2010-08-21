@@ -6,3 +6,7 @@ use Test::More qw( no_plan );
 BEGIN {
     use_ok('App::Sys::Info');
 }
+
+App::Sys::Info->run;
+
+ok(1, 'Fake test');

@@ -1,10 +1,10 @@
 {
     module_name    => 'App::Sys::Info',
     requires       => {
-        'Sys::Info'      => '0.73',
-        'Number::Format' => 0,
-        'Text::Table'    => 0,
-        'Time::Elapsed'  => 0,
+        'Sys::Info'            => '0.73',
+        'Format::Human::Bytes' => 0,
+        'Text::Table'          => 0,
+        'Time::Elapsed'        => 0,
         ( $] < 5.006 ? ( 'warnings::compat' => 0 ) : ()),
     },
     script_files => [qw(

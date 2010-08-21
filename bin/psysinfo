@@ -24,7 +24,7 @@ Excute from command line.
 
 =head1 DESCRIPTION
 
-Front end to App::Sys::Info.
+Front end to C<App::Sys::Info>.
 
 =head1 SEE ALSO
 
