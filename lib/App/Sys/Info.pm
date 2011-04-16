@@ -350,15 +350,17 @@ The output is similar to I<systeminfo> windows command.
 
 =head1 METHODS
 
-=head2 NA
-
 =head2 cpu
+
+=head2 fhb
 
 =head2 info
 
 =head2 meta
 
 =head2 new
+
+=head2 NA
 
 =head2 nf
 
