@@ -1,6 +1,7 @@
 Revision history for Perl extension App::Sys::Info.
 
-Time zone is GMT+2.
+0.21 Sun Jul  8 01:50:04 2012
+    => Bump version.
 
 0.20 Sun Aug 22 01:49:26 2010
     => Replace Number::Format with Format::Human::Bytes.

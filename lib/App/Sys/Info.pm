@@ -3,7 +3,7 @@ use strict;
 use warnings;
 use vars qw( $VERSION );
 
-$VERSION = '0.20';
+$VERSION = '0.21';
 
 use constant CP_UTF8      => 65_001;
 use constant LAST_ELEMENT =>     -1;
