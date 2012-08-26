@@ -3,10 +3,8 @@ use strict;
 use warnings;
 use Test::More qw( no_plan );
 
-BEGIN {
-    use_ok('App::Sys::Info');
-}
+use App::Sys::Info;
 
 App::Sys::Info->run;
 
-ok(1, 'Fake test');
+ok(1, 'Module loaded ok');
