@@ -13,7 +13,7 @@ use POSIX                qw( locale_h );
 use Text::Table          qw();
 use Time::Elapsed        qw( elapsed  );
 use Sys::Info            qw();
-use Sys::Info::Constants qw( NEW_PERL );
+use Sys::Info::Constants qw( NEW_PERL OSID );
 
 my($NEED_CHCP, $OLDCP);
 
@@ -86,22 +86,24 @@ sub _init_encoding {
 }
 
 sub _probe {
-    my $self = shift;
-    my $meta = $self->meta;
-    my $NA   = $self->NA;
-    my $i    = $self->info;
-    my $os   = $self->os;
-    my $pt   = $os->product_type;
-    my $proc = $self->_processors;
-    my $tz   = $os->tz;
+    my $self   = shift;
+    my $meta   = $self->meta;
+    my $NA     = $self->NA;
+    my $i      = $self->info;
+    my $os     = $self->os;
+    my $pt     = $os->product_type;
+    my $proc   = $self->_processors;
+    my $tz     = $os->tz;
+    my $driver = 'Sys::Info::Driver::' . OSID;
     my @rv;
 
     push @rv,
-    [ 'Sys::Info Version' => Sys::Info->VERSION ],
-    [ 'Perl Version'      => $i->perl_long      ],
-    [ 'Host Name'         => $os->host_name     ],
-    [ 'OS Name'           => $self->_os_name    ],
-    [ 'OS Version'        => $self->_os_version ],
+        [ 'Sys::Info Version' => Sys::Info->VERSION ],
+        [  sprintf( '%s Driver Version', OSID ) => $driver->VERSION ],
+        [ 'Perl Version'      => $i->perl_long      ],
+        [ 'Host Name'         => $os->host_name     ],
+        [ 'OS Name'           => $self->_os_name    ],
+        [ 'OS Version'        => $self->_os_version ],
     ;
 
     my $manu = $meta->{manufacturer};
