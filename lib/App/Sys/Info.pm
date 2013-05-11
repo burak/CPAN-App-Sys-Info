@@ -2,7 +2,7 @@ package App::Sys::Info;
 use strict;
 use warnings;
 
-our $VERSION = '0.22';
+our $VERSION = '0.23';
 
 use constant CP_UTF8      => 65_001;
 use constant LAST_ELEMENT =>     -1;
@@ -287,7 +287,7 @@ sub _vm {
 sub _mb {
     my $self = shift;
     my $kb   = shift || return $self->NA;
-    return $self->fhb->base10( $kb );
+    return $self->fhb->base2( $kb, 2 );
 }
 
 sub _os_name {
