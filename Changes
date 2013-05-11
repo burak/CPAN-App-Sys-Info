@@ -1,5 +1,8 @@
 Revision history for Perl extension App::Sys::Info.
 
+0.22 Sat May 11 06:12:58 2013
+   => Display the driver version
+
 0.21 Mon Aug 27 01:42:09 2012
     => Distro fixes.
 

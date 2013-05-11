@@ -2,7 +2,7 @@ package App::Sys::Info;
 use strict;
 use warnings;
 
-our $VERSION = '0.21';
+our $VERSION = '0.22';
 
 use constant CP_UTF8      => 65_001;
 use constant LAST_ELEMENT =>     -1;
