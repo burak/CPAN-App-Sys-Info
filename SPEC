@@ -11,7 +11,7 @@
     )],
     meta_merge     => {
         resources => {
-            repository => 'http://bitbucket.org/burak/cpan-app-sys-info/',
+            repository => 'http://github.com/burak/cpan-app-sys-info/',
         },
     },
     BUILDER => {
