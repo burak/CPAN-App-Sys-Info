@@ -1,5 +1,8 @@
 Revision history for Perl extension App::Sys::Info.
 
+0.24 Wed Jan 21 02:29:23 2015
+   => Fix RT#97724.
+
 0.23 Sat May 11 06:30:15 2013
    => Fix memory display
 

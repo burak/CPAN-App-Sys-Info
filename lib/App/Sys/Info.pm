@@ -2,7 +2,7 @@ package App::Sys::Info;
 use strict;
 use warnings;
 
-our $VERSION = '0.23';
+our $VERSION = '0.24';
 
 use constant CP_UTF8      => 65_001;
 use constant LAST_ELEMENT =>     -1;
@@ -37,8 +37,20 @@ sub _chcp {
 sub new {
     my $class  = shift;
     my $i      = Sys::Info->new;
+    my $loc    = do {
+        my $rv;
+        eval {
+            $rv = setlocale( LC_CTYPE );
+            1;
+        } or do {
+            my $error = $@ || 'Unknown error';
+            warn "Unable to collect the locale information: $error";
+            $rv = '';
+        };
+        $rv;
+    };
     my $self   = {
-        LOCALE => setlocale( LC_CTYPE ),
+        LOCALE => $loc,
         NA     => 'N/A',
         info   => $i,
         os     => $i->os,
