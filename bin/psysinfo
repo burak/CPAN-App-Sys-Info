@@ -1,4 +1,7 @@
-#!/usr/bin/perl -w
+#!/usr/bin/perl
+
+# PODNAME: psysinfo
+
 use strict;
 use warnings;
 use App::Sys::Info;
