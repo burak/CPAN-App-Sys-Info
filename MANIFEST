@@ -1,8 +1,0 @@
-lib/App/Sys/Info.pm
-bin/psysinfo
-t/01-use.t
-Build.PL
-Changes
-MANIFEST
-README
-SPEC
