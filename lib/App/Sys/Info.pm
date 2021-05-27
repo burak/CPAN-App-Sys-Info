@@ -109,8 +109,15 @@ sub _probe {
     my @rv;
 
     push @rv,
-        [ 'Sys::Info Version' => Sys::Info->VERSION ],
-        [  sprintf( '%s Driver Version', OSID ) => $driver->VERSION ],
+        [ 'Sys::Info Version' =>
+                sprintf(
+                    '%s (%s: %s - Base: %s)',
+                        Sys::Info->VERSION,
+                        OSID,
+                        $driver->VERSION,
+                        Sys::Info::Base->VERSION,
+                )
+        ],
         [ 'Perl Version'      => $i->perl_long      ],
         [ 'Host Name'         => $os->host_name     ],
         [ 'OS Name'           => $self->_os_name    ],
