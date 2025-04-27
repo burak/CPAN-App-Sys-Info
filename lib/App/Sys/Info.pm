@@ -10,7 +10,7 @@ use Carp                 qw( croak    );
 use Format::Human::Bytes;
 use POSIX                qw( locale_h );
 use Text::Table          qw();
-use Time::Elapsed        qw( elapsed  );
+use Time::Duration       qw( duration_exact  );
 use Sys::Info            qw();
 use Sys::Info::Constants qw( NEW_PERL OSID );
 
@@ -143,7 +143,7 @@ sub _probe {
 
     $self->_install_date( \@rv );
 
-    push @rv, [ 'System Up Time' => elapsed($tick) ] if $tick;
+    push @rv, [ 'System Up Time' => duration_exact($tick) ] if $tick;
 
     $self->_manufacturer( \@rv, $meta );
 

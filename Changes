@@ -1,6 +1,7 @@
 Revision history for Perl extension App::Sys::Info.
 
 {{$NEXT}}
+    - Replace Time::Elapsed wih Time::Duration.
 
 0.25 2018-12-23 BURAK
     - Migrate to dzil.
